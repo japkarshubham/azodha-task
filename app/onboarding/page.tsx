@@ -1,68 +1,94 @@
 'use client'
 
-import { useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import AuthGuard from '@/app/components/AuthGuard'
+import {useAppSelector} from '@/app/store/hooks'
+import Step1Profile from './steps/Step1Profile'
+import Step2Songs from './steps/Step2Songs'
+import Step3Payment from './steps/Step3Payment'
+import Step4Success from './steps/Step4Success'
+
+const STEPS = [
+    {label: 'Profile'},
+    {label: 'Songs'},
+    {label: 'Payment'},
+    {label: 'Done'},
+]
+
+function StepIndicator({currentStep}: { currentStep: number }) {
+    return (
+        <div className="flex items-center w-full max-w-lg mx-auto mb-8">
+            {STEPS.map((step, i) => {
+                const stepNum = i + 1
+                const isCompleted = stepNum < currentStep
+                const isCurrent = stepNum === currentStep
+
+                return (
+                    <div key={i} className="flex items-center flex-1 last:flex-none">
+                        <div className="flex flex-col items-center gap-1">
+                            <div
+                                className={[
+                                    'flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors',
+                                    isCompleted
+                                        ? 'bg-green-500 text-white'
+                                        : isCurrent
+                                            ? 'bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900'
+                                            : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500',
+                                ].join(' ')}
+                            >
+                                {isCompleted ? '✓' : stepNum}
+                            </div>
+                            <span
+                                className={[
+                                    'text-xs whitespace-nowrap',
+                                    isCurrent
+                                        ? 'text-zinc-900 dark:text-zinc-50 font-medium'
+                                        : 'text-zinc-400 dark:text-zinc-500',
+                                ].join(' ')}
+                            >
+                {step.label}
+              </span>
+                        </div>
+                        {i < STEPS.length - 1 && (
+                            <div
+                                className={[
+                                    'h-px flex-1 mx-2 mt-[-1rem] transition-colors',
+                                    isCompleted ? 'bg-green-400' : 'bg-zinc-200 dark:bg-zinc-700',
+                                ].join(' ')}
+                            />
+                        )}
+                    </div>
+                )
+            })}
+        </div>
+    )
+}
 
 function OnboardingContent() {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+    const currentStep = useAppSelector((s) => s.onboarding.currentStep)
 
-  function handleComplete() {
-    startTransition(() => {
-      localStorage.setItem('onboarding_complete', 'true')
-      router.push('/')
-    })
-  }
+    const stepComponents: Record<number, React.JSX.Element> = {
+        1: <Step1Profile/>,
+        2: <Step2Songs/>,
+        3: <Step3Payment/>,
+        4: <Step4Success/>,
+    }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 p-10 shadow-sm ring-1 ring-black/5 dark:ring-white/10 text-center">
-        <div className="mb-6 flex items-center justify-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-2xl">
-            👋
-          </span>
+    return (
+        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 px-4 py-10">
+            <StepIndicator currentStep={currentStep}/>
+
+            <div
+                className="w-full max-w-lg mx-auto rounded-2xl bg-white dark:bg-zinc-900 p-8 shadow-sm ring-1 ring-black/5 dark:ring-white/10">
+                {stepComponents[currentStep]}
+            </div>
         </div>
-
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
-          Welcome aboard!
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 max-w-sm mx-auto leading-relaxed">
-          Let&apos;s get you set up. Complete the steps below to start using the app.
-        </p>
-
-        <ol className="text-left mb-8 flex flex-col gap-3">
-          {['Set up your profile', 'Configure your preferences', 'Explore the dashboard'].map(
-            (step, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-3 rounded-lg border border-zinc-100 dark:border-zinc-800 px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-50 text-xs font-medium text-white dark:text-zinc-900">
-                  {i + 1}
-                </span>
-                {step}
-              </li>
-            ),
-          )}
-        </ol>
-
-        <button
-          onClick={handleComplete}
-          disabled={isPending}
-          className="w-full rounded-full bg-zinc-900 dark:bg-zinc-50 px-4 py-2.5 text-sm font-medium text-white dark:text-zinc-900 transition hover:bg-zinc-700 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isPending ? 'Finishing up…' : 'Complete onboarding'}
-        </button>
-      </div>
-    </div>
-  )
+    )
 }
 
 export default function OnboardingPage() {
-  return (
-    <AuthGuard>
-      <OnboardingContent />
-    </AuthGuard>
-  )
+    return (
+        <AuthGuard>
+            <OnboardingContent/>
+        </AuthGuard>
+    )
 }
